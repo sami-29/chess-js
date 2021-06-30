@@ -1,0 +1,40 @@
+{
+    "pawn":{
+        "name":"pawn",
+        "points": 1,
+        "move":1,
+        "white":"assets/Chess_plt60.png",
+        "black":"assets/Chess_pdt60.png"
+    },
+    "bishop":{
+        "name":"bishop",
+        "points":3,
+        "move":[1,1],
+        "white":"assets/Chess_blt60.png",
+        "black":"assets/Chess_bdt60.png"
+    },
+    "knight":{
+        "name": "knight",
+        "points":3,
+        "white":"assets/Chess_nlt60.png",
+        "black":"assets/Chess_ndt60.png"
+    },
+    "rook":{
+        "name":"rook",
+        "points":5,
+        "white":"assets/Chess_rlt60.png",
+        "black":"assets/Chess_rdt60.png"
+    },
+    "queen":{
+        "name":"queen",
+        "points":7,
+        "white":"assets/Chess_qlt60.png",
+        "black":"assets/Chess_qdt60.png"
+    },
+    "king":{
+        "name":"king",
+        "points": 40,
+        "white":"assets/Chess_klt60.png",
+        "black":"assets/Chess_kdt60.png"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "color" : "#333333",
+    "colorOnClick": "green",
+    "colorifEat":"purple",
+    "colorifnothing": "red",
+    "whiteOnTop" : false,
+    "normal" : true,
+    "assets" : "basic",
+    "multiplayer" : false,
+    "time" : 10
+}
