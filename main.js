@@ -52,73 +52,33 @@ function BlackandWhite() {
     for (let row = 0; row < 8; row++){
         for (let col = 0; col < 8; col++){
             let isdark = (row % 2) != (col % 2)
-            if (isdark) { cases[row][col].style.cssText = `background-color: ${ConfigObj.color}`}
+            if (isdark) { cases[row][col].style.cssText = `background-color: ${ConfigObj.colorBlack}`}
+        }
+    }
+    for (let row = 0; row < 8; row++){
+        for (let col = 0; col < 8; col++){
+            let isdark = (row % 2) != (col % 2)
+            if (!isdark) { cases[row][col].style.cssText = `background-color: ${ConfigObj.colorWhite}`}
         }
     }
 }
 // End
-
-// Put pieces in place
-
-let CasesState = [
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null]    
-]
-
+let CasesState
 function putpieces() {
-    let adder = 7
-    let pawnadder = 5
-    if (ConfigObj.whiteOnTop === false) {
-        adder = 0
-        pawnadder = 0
+    let initial
+    if(!ConfigObj.normal) {
+        initial = ConfigObj.CUSTOM
     }
-        // black pawns
-        for (let i = 0; i < 8; i++){
-            CasesState[1+pawnadder][i] = 'BP'
-        }
-        // white pawns
-        for (let i = 0; i < 8; i++){
-            CasesState[6-pawnadder][i] = 'WP'
-        }
-        // black rooks
-        for (let i = 0; i < 8; i+=7){
-            CasesState[0+adder][i] = 'BR'
-        }
-        // white rooks
-        for (let i = 0; i < 8; i+=7){
-            CasesState[7-adder][i] = 'WR'
-        }
-        // black knights
-        for (let i = 1; i < 8; i+=5){
-            CasesState[0+adder][i] = 'BN'
-        }
-        // white knights
-        for (let i = 1; i < 8; i+=5){
-            CasesState[7-adder][i] = 'WN'
-        }
-        // black bishops
-        for (let i = 2; i < 8; i+=3){
-            CasesState[0+adder][i] = 'BB'
-        }
-        // white bishops
-        for (let i = 2; i < 8; i+=3){
-            CasesState[7-adder][i] = 'WB'
-        }
-        // black queen
-        CasesState[0+adder][3] = 'BQ'
-        // white queen
-        CasesState[7-adder][3] = 'WQ'
-        // black king
-        CasesState[0+adder][4] = 'BK'
-        // white king
-        CasesState[7-adder][4] = 'WK'  
+    else if (ConfigObj.whiteOnTop) {
+        initial = ConfigObj.WHITEONTOP
+    }
+    else if(!ConfigObj.whiteOnTop) {
+        initial = ConfigObj.BLACKONTOP
+    }
+    return initial
 }
+
+
 
 function drawpieces() {
     for (let i = 0; i < 8; i++){
@@ -184,7 +144,7 @@ function showMoves(row, col) {
             }
         }
         )
-        cases[row][col].style.cssText = `background-color:${ConfigObj.colorOnClick}`
+        cases[row][col].style.cssText = `background-color:${ConfigObj.colorTargeted}`
     }
 }
 function clearup(colors, lastindex, row, col) {
@@ -309,7 +269,8 @@ function legalmove(row, col) {
 // White knight moves
 function pawn(row, col, color) {
     let legalmovesindex = []
-    if (color == 'B') {
+    if (!ConfigObj.whiteOnTop && color == 'B'
+    ||ConfigObj.whiteOnTop && color == 'W') {
         if (row == 6) {
             if (CasesState[5][col] == null && CasesState[4][col] == null) {
                 legalmovesindex.push([4, col])
@@ -323,19 +284,20 @@ function pawn(row, col, color) {
                 
         if (row > 0) {
             if (CasesState[row - 1][col - 1] !== null && CasesState[row - 1][col - 1] !== undefined) {
-                if (CasesState[row - 1][col - 1].charAt(0) == 'B') {
+                if (CasesState[row - 1][col - 1].charAt(0) == color) {
                     legalmovesindex.push([row - 1, col - 1])
                 }
             }
             if (CasesState[row - 1][col + 1] !== null && CasesState[row - 1][col + 1] !== undefined) {
-                if (CasesState[row - 1][col + 1].charAt(0) == 'B') {
+                if (CasesState[row - 1][col + 1].charAt(0) == color) {
                     legalmovesindex.push([row - 1, col + 1])
                 }
             }
         }
         return legalmovesindex
     }
-    if (color == 'W') {
+    if (ConfigObj.whiteOnTop && color == 'B'
+    ||!ConfigObj.whiteOnTop && color == 'W') {
         if (row == 1) {
                     if (CasesState[3][col] == null&&CasesState[2][col]==null) {
                         legalmovesindex.push([3, col])
@@ -349,12 +311,12 @@ function pawn(row, col, color) {
                 }
                 if (row < 7) {
                     if (CasesState[row + 1][col - 1] !== null && CasesState[row + 1][col - 1] !== undefined) {
-                    if (CasesState[row + 1][col - 1].charAt(0) == 'W') {
+                    if (CasesState[row + 1][col - 1].charAt(0) == color) {
                         legalmovesindex.push([row + 1, col - 1])
                     }
                 }
                 if (CasesState[row + 1][col + 1] !== null && CasesState[row + 1][col + 1] !== undefined) {
-                    if (CasesState[row + 1][col + 1].charAt(0) == 'W') {
+                    if (CasesState[row + 1][col + 1].charAt(0) == color) {
                         legalmovesindex.push([row+1,col+1])
                 }
                 }
@@ -667,8 +629,8 @@ function move(a, b) {
 
 // Main
 function main() {
+    // Put pieces in place
     BlackandWhite()
-    putpieces()
     drawpieces()
     listen()
 
@@ -682,6 +644,7 @@ sendHttpRequest('Get', 'config.json')
         sendHttpRequest('Get', 'pieces.json')
             .then((Data) => {
                 PiecesObj = Data
+                CasesState = putpieces()
                 main()
     })
 })

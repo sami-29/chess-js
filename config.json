@@ -1,11 +1,44 @@
 {
-    "color" : "#333333",
-    "colorOnClick": "green",
-    "colorifEat":"purple",
-    "colorifnothing": "red",
+    "colorTargeted": "#4b5198",
+    "colorBlack" : "#9793cc",
+    "colorWhite" : "#cda2f9",
+    "colorOnClick": "#1135d7",
+    "colorifEat":"#2f0f62",
+    "colorifnothing": "#4f3a65",
     "whiteOnTop" : false,
     "normal" : true,
     "assets" : "basic",
     "multiplayer" : false,
-    "time" : 10
+    "time" : 10,
+
+    "WHITEONTOP": [
+    ["WR", "WN", "WB", "WK", "WQ", "WB", "WN", "WR"],
+    ["WP", "WP", "WP", "WP", "WP", "WP", "WP", "WP"],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    ["BP", "BP", "BP", "BP", "BP", "BP", "BP", "BP"],
+    ["BR", "BN", "BB", "BK", "BQ", "BB", "BN", "BR"]    
+    ],
+    "BLACKONTOP": [
+    ["BR", "BN", "BB", "BQ", "BK", "BB", "BN", "BR"],
+    ["BP", "BP", "BP", "BP", "BP", "BP", "BP", "BP"],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null],
+    ["WP", "WP", "WP", "WP", "WP", "WP", "WP", "WP"],
+    ["WR", "WN", "WB", "WQ", "WK", "WB", "WN", "WR"]   
+    ],
+    "CUSTOM": [
+    ["BR", "BN", "BB", "BQ", "BK", "BB", "BN", "BR"],
+    ["BP", "BP", "BP", "BP", "BP", "BP", "BP", "BP"],
+    ["BR", "BN", "BB", "BQ", "BK", "BB", "BN", "BR"],
+    ["BP", "BP", "BP", "BP", "BP", "BP", "BP", "BP"],
+    ["WP", "WP", "WP", "WP", "WP", "WP", "WP", "WP"],
+    ["WR", "WN", "WB", "WQ", "WK", "WB", "WN", "WR"], 
+    ["WP", "WP", "WP", "WP", "WP", "WP", "WP", "WP"],
+    ["WR", "WN", "WB", "WQ", "WK", "WB", "WN", "WR"]   
+    ]
 }
