@@ -69,11 +69,8 @@ function putpieces() {
     if(!ConfigObj.normal) {
         initial = ConfigObj.CUSTOM
     }
-    else if (ConfigObj.whiteOnTop) {
-        initial = ConfigObj.WHITEONTOP
-    }
-    else if(!ConfigObj.whiteOnTop) {
-        initial = ConfigObj.BLACKONTOP
+    else {
+        initial = ConfigObj.BOARD
     }
     return initial
 }
@@ -126,6 +123,16 @@ function drawpieces() {
         }
     }
 
+}
+
+function rotate() {
+    if (!ConfigObj.whiteOnTop) {
+        board.style.cssText += "transform:rotate(180deg);"
+        let imgs = document.querySelectorAll('img')
+        imgs.forEach((element) => {
+            element.style.cssText += "transform:rotate(180deg);"
+    })
+    }
 }
 // Event listners
 function showMoves(row, col) {
@@ -269,8 +276,7 @@ function legalmove(row, col) {
 // White knight moves
 function pawn(row, col, color) {
     let legalmovesindex = []
-    if (!ConfigObj.whiteOnTop && color == 'B'
-    ||ConfigObj.whiteOnTop && color == 'W') {
+    if (color == 'W') {
         if (row == 6) {
             if (CasesState[5][col] == null && CasesState[4][col] == null) {
                 legalmovesindex.push([4, col])
@@ -296,8 +302,7 @@ function pawn(row, col, color) {
         }
         return legalmovesindex
     }
-    if (ConfigObj.whiteOnTop && color == 'B'
-    ||!ConfigObj.whiteOnTop && color == 'W') {
+    if (color == 'B') {
         if (row == 1) {
                     if (CasesState[3][col] == null&&CasesState[2][col]==null) {
                         legalmovesindex.push([3, col])
@@ -632,6 +637,7 @@ function main() {
     // Put pieces in place
     BlackandWhite()
     drawpieces()
+    rotate()
     listen()
 
 

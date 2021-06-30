@@ -11,7 +11,7 @@
     "multiplayer" : false,
     "time" : 10,
 
-    "WHITEONTOP": [
+    "BOARD": [
     ["WR", "WN", "WB", "WK", "WQ", "WB", "WN", "WR"],
     ["WP", "WP", "WP", "WP", "WP", "WP", "WP", "WP"],
     [null, null, null, null, null, null, null, null],
@@ -20,16 +20,6 @@
     [null, null, null, null, null, null, null, null],
     ["BP", "BP", "BP", "BP", "BP", "BP", "BP", "BP"],
     ["BR", "BN", "BB", "BK", "BQ", "BB", "BN", "BR"]    
-    ],
-    "BLACKONTOP": [
-    ["BR", "BN", "BB", "BQ", "BK", "BB", "BN", "BR"],
-    ["BP", "BP", "BP", "BP", "BP", "BP", "BP", "BP"],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    ["WP", "WP", "WP", "WP", "WP", "WP", "WP", "WP"],
-    ["WR", "WN", "WB", "WQ", "WK", "WB", "WN", "WR"]   
     ],
     "CUSTOM": [
     ["BR", "BN", "BB", "BQ", "BK", "BB", "BN", "BR"],
