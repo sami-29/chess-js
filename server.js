@@ -1,79 +1,472 @@
-const envConfig = require("dotenv").config();
-const express = require("express");
-const Ably = require("ably");
-const app = express();
-const ABLY_API_KEY = process.env.ABLY_API_KEY;
+const express = require('express')
+const path = require('path')
+const http = require('http')
+const socketio = require('socket.io')
+const app = express()
+const server = http.createServer(app)
+const io = socketio(server)
 
-let peopleAccessingTheWebsite = 0;
-let players = {};
-let playerChannels = {};
-let gameOn = false;
-let alivePlayers = 0;
-let totalPlayers = 0;
-let gameRoom;
-let deadPlayerCh;
-let gameTickerOn = false;
+app.use(express.static(path.join(__dirname,'public')))
 
-const realtime = Ably.Realtime({
-  key: ABLY_API_KEY,
-  echoMessages: false,
-});
-
-//create a uniqueId to assign to clients on auth
-const uniqueId = function () {
-  return "id-" + totalPlayers + Math.random().toString(36).substr(2, 16);
-};
-
-app.use(express.static("js"));
-
-app.get("/auth", (request, response) => {
-  const tokenParams = { clientId: uniqueId() };
-  realtime.auth.createTokenRequest(tokenParams, function (err, tokenRequest) {
-    if (err) {
-      response
-        .status(500)
-        .send("Error requesting token: " + JSON.stringify(err));
-    } else {
-      response.setHeader("Content-Type", "application/json");
-      response.send(JSON.stringify(tokenRequest));
+// Helper functions
+function arrayEquals(a, b) {
+  return Array.isArray(a) &&
+    Array.isArray(b) &&
+    a.length === b.length &&
+    a.every((val, index) => val === b[index]);
+}
+function includesArray(a, b) {
+    for (let i = 0; i < a.length; i++){
+        if(arrayEquals(a[i],b)){return true}
     }
-  });
-});
+    return false
+}
+// Loading stuff
+let kingMoved = false
+let ConfigObj = undefined
+let PiecesObj = undefined
+let turn = 'white'
+let eaten = []
+let playerscount = 0
+let players = {
+    white: {
+        color: 'white',
+        id: null
+    },
+    black: {
+        color: 'black',
+        id: null
+    }
+}
 
-app.get("/", (request, response) => {
-  response.header("Access-Control-Allow-Origin", "*");
-  response.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  if (++peopleAccessingTheWebsite > MIN_PLAYERS_TO_START_GAME) {
-    response.sendFile(__dirname + "/views/gameRoomFull.html");
-  } else {
-    response.sendFile(__dirname + "/views/intro.html");
-  }
-});
+// End(0)
 
-app.get("/gameplay", (request, response) => {
-  response.sendFile(__dirname + "/views/index.html");
-});
+// Board setup
 
-app.get("/winner", (request, response) => {
-  response.sendFile(__dirname + "/views/winner.html");
-});
+let CasesState
 
-app.get("/gameover", (request, response) => {
-  response.sendFile(__dirname + "/views/gameover.html");
-});
+// Legal moves
 
-const listener = app.listen(process.env.PORT, () => {
-  console.log("Your app is listening on port " + listener.address().port);
-});
+function legalmove(row, col) {
+    const Case = CasesState[row][col]
+    if (Case === null) { return [] }
+    //legalmovesindex.push([row,col])
+    const legalmovesindex = []
+    const color = CasesState[row][col].charAt(0)
+    const PieceType = CasesState[row][col].charAt(1)
+    if (color == 'W') {
+        if(turn === 'black'){return []}
+        switch (PieceType) {
+            case ("P"):
+                return pawn(row,col,'B')
+            case ('N'):
+                return knight(row, col, 'W')
+            case ('B'):
+                return bishop(row, col, 'B')
+            case ('R'):
+                return rook(row, col, 'B')
+            case ('Q'):
+                return bishop(row, col, 'B').concat(rook(row, col, 'B'))
+            case ('K'):
+                return king(row, col, 'B')
+        }
+    }
+    if (color == 'B') {
+        if(turn === 'white'){return []}
+        switch (PieceType) {
+            case ("P"):
+                return pawn(row,col,'W')
+            case ("N"):
+                return knight(row, col, 'B')
+            case ('B'):
+                return bishop(row, col, 'W')
+            case ('R'):
+                return rook(row, col, 'W')
+            case ('Q'):
+                return bishop(row, col, 'W').concat(rook(row, col, 'W'))
+            case ('K'):
+                return king(row, col, 'W')
+        }
+    }
+    return []
+}
 
-realtime.connection.once("connected", () => {
-  gameRoom = realtime.channels.get("game-room");
-  gameRoom.presence.subscribe("enter", (player) => {
-    alert('a player has joined')
-  });
-  gameRoom.presence.subscribe("leave", (player) => { });
-  gameRoom.subscribe('enter',()=>alert(hey))
-});
+// White knight moves
+function pawn(row, col, color) {
+    let legalmovesindex = []
+    if (color == 'W') {
+        if (row == 6) {
+            if (CasesState[5][col] == null && CasesState[4][col] == null) {
+                legalmovesindex.push([4, col])
+            }
+        }
+        if (row !== 0) {
+            if (CasesState[row - 1][col] == null) {
+                legalmovesindex.push([row - 1, col])
+            }
+        }
+                
+        if (row > 0) {
+            if (CasesState[row - 1][col - 1] !== null && CasesState[row - 1][col - 1] !== undefined) {
+                if (CasesState[row - 1][col - 1].charAt(0) == color) {
+                    legalmovesindex.push([row - 1, col - 1])
+                }
+            }
+            if (CasesState[row - 1][col + 1] !== null && CasesState[row - 1][col + 1] !== undefined) {
+                if (CasesState[row - 1][col + 1].charAt(0) == color) {
+                    legalmovesindex.push([row - 1, col + 1])
+                }
+            }
+        }
+        return legalmovesindex
+    }
+    if (color == 'B') {
+        if (row == 1) {
+                    if (CasesState[3][col] == null&&CasesState[2][col]==null) {
+                        legalmovesindex.push([3, col])
+                    }
+                    
+                }
+                if (row !== 7) {
+                   if (CasesState[row + 1][col] == null) {  
+                        legalmovesindex.push([row + 1, col])
+                } 
+                }
+                if (row < 7) {
+                    if (CasesState[row + 1][col - 1] !== null && CasesState[row + 1][col - 1] !== undefined) {
+                    if (CasesState[row + 1][col - 1].charAt(0) == color) {
+                        legalmovesindex.push([row + 1, col - 1])
+                    }
+                }
+                if (CasesState[row + 1][col + 1] !== null && CasesState[row + 1][col + 1] !== undefined) {
+                    if (CasesState[row + 1][col + 1].charAt(0) == color) {
+                        legalmovesindex.push([row+1,col+1])
+                }
+                }
+        }
+        return legalmovesindex
+    }
+}
+function knight(row, col, color) {//Color not to eat(will fix later
+    let legalmovesindex= []
+    if (row > 1) {
+                    if (col > 0) {
+                        legalmovesindex.push([row - 2, col - 1])
+                        if (CasesState[row - 2][col - 1]!== null) {
+                            if (CasesState[row - 2][col - 1].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                    if (col < 7) {
+                        legalmovesindex.push([row - 2, col + 1])
+                        if (CasesState[row - 2][col + 1]!== null) {
+                            if (CasesState[row - 2][col + 1].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                }
+                if (row < 6) {
+                    if (col > 0) {
+                        legalmovesindex.push([row + 2, col - 1])
+                        if (CasesState[row + 2][col - 1]!== null) {
+                            if (CasesState[row + 2][col - 1].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                    if (col < 7) {
+                        legalmovesindex.push([row + 2, col + 1])
+                        if (CasesState[row + 2][col + 1]!== null) {
+                            if (CasesState[row + 2][col + 1].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                }
+                if (col > 1) {
+                    if (row > 0) {
+                        legalmovesindex.push([row - 1, col - 2])
+                        if (CasesState[row - 1][col - 2] !== null) {
+                            if (CasesState[row - 1][col - 2].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                    if(row<7){
+                        legalmovesindex.push([row + 1, col - 2])
+                        if (CasesState[row + 1][col - 2]!== null) {
+                            if (CasesState[row + 1][col - 2].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                }
+                if (col < 6) {
+                    if (row > 0) {
+                        legalmovesindex.push([row - 1, col + 2])
+                        if (CasesState[row - 1][col + 2] !== null) {
+                            if (CasesState[row - 1][col + 2].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                    if(row<7){
+                        legalmovesindex.push([row + 1, col + 2])
+                        if (CasesState[row + 1][col + 2]!== null) {
+                            if (CasesState[row + 1][col + 2].charAt(0) == color) {
+                                legalmovesindex.pop()
+                            }
+                        }
+                    }
+                    
+    }
+    return legalmovesindex
+}
+function bishop(row, col, color) {
+    let legalmovesindex = []
+    // Left Up move
+    let i = 1
+    let Break = false
+    while (row - i !== -1 && col - i !== -1 && !Break) {
+        if (CasesState[row - i][col - i] == null) {
+            legalmovesindex.push([row - i,col - i])
+            i++
+        }
+        else if (CasesState[row - i][col - i].charAt(0) == color) {
+            legalmovesindex.push([row - i,col - i])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    // Right Up move
+    i = 1
+    Break = false
+    while (row - i !== -1 && col + i !== 8 && !Break) {
+        if (CasesState[row - i][col + i] == null) {
+            legalmovesindex.push([row - i,col + i])
+            i++
+        }
+        else if (CasesState[row - i][col + i].charAt(0) == color) {
+            legalmovesindex.push([row - i,col + i])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    // Left Down
+    i = 1
+    Break = false
+    while (row + i !== 8 && col - i !== -1 && !Break) {
+        if (CasesState[row + i][col - i] == null) {
+            legalmovesindex.push([row + i,col - i])
+            i++
+        }
+        else if (CasesState[row + i][col - i].charAt(0) == color) {
+            legalmovesindex.push([row + i,col - i])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    // Right Down
+    i = 1
+    Break = false
+    while (row + i !== 8 && col + i !== 8 && !Break) {
+        if (CasesState[row + i][col + i] == null) {
+            legalmovesindex.push([row + i,col + i])
+            i++
+        }
+        else if (CasesState[row + i][col + i].charAt(0) == color) {
+            legalmovesindex.push([row + i,col + i])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    return legalmovesindex
+}
+function rook(row, col, color) {
+    let legalmovesindex = []
+    // Up move
+    let i = 1
+    let Break = false
+    while (row - i !== -1 && !Break) {
+        if (CasesState[row - i][col] == null) {
+            legalmovesindex.push([row - i,col])
+            i++
+        }
+        else if (CasesState[row - i][col].charAt(0) == color) {
+            legalmovesindex.push([row - i,col])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    // Down move
+    i = 1
+    Break = false
+    while (row + i !== 8 && !Break) {
+        if (CasesState[row + i][col] == null) {
+            legalmovesindex.push([row + i,col])
+            i++
+        }
+        else if (CasesState[row + i][col].charAt(0) == color) {
+            legalmovesindex.push([row + i,col])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    // Left move
+    i = 1
+    Break = false
+    while (col - i !== -1 && !Break) {
+        if (CasesState[row][col - i] == null) {
+            legalmovesindex.push([row,col - i])
+            i++
+        }
+        else if (CasesState[row][col - i].charAt(0) == color) {
+            legalmovesindex.push([row,col - i])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+
+    //Right move
+    i = 1
+    Break = false
+    while (col + i !== 8 && !Break) {
+        if (CasesState[row][col + i] == null) {
+            legalmovesindex.push([row,col + i])
+            i++
+        }
+        else if (CasesState[row][col + i].charAt(0) == color) {
+            legalmovesindex.push([row,col + i])
+            Break = true
+        }
+        else {
+            Break = true
+        }
+    }
+    return legalmovesindex
+}
+function king(row, col, color) {
+    let legalmovesindex = []
+    // up
+    if (row - 1 !== -1) {
+        // strictly up
+        if (CasesState[row - 1][col] == null) {
+            legalmovesindex.push([row - 1, col])
+        }
+        else if (CasesState[row - 1][col].charAt(0) == color) {
+            legalmovesindex.push([row - 1, col])
+        }
+        if (col - 1 !== -1) {
+            // left
+            if (CasesState[row - 1][col - 1] == null) {
+                legalmovesindex.push([row - 1, col - 1])
+            }
+            else if (CasesState[row - 1][col - 1].charAt(0) == color) {
+                legalmovesindex.push([row - 1, col - 1])
+            }
+        }
+        if (col + 1 !== 8) {
+            // right
+            if (CasesState[row - 1][col + 1] == null) {
+                legalmovesindex.push([row - 1, col + 1])
+            }
+            else if (CasesState[row - 1][col + 1].charAt(0) == color) {
+                legalmovesindex.push([row - 1, col + 1])
+            }
+        }
+    }
+    // down
+    if (row + 1 !== 8) {
+        if (CasesState[row + 1][col] == null) {
+            legalmovesindex.push([row + 1, col])
+        }
+        else if (CasesState[row + 1][col].charAt(0) == color) {
+            legalmovesindex.push([row + 1, col])
+        }
+        if (col - 1 !== -1) {
+            // left
+            if (CasesState[row + 1][col - 1] == null) {
+                legalmovesindex.push([row + 1, col - 1])
+            }
+            else if (CasesState[row + 1][col - 1].charAt(0) == color) {
+                legalmovesindex.push([row + 1, col - 1])
+            }
+        }
+        if (col + 1 !== 8) {
+            // right
+            if (CasesState[row + 1][col + 1] == null) {
+                legalmovesindex.push([row + 1, col + 1])
+            }
+            else if (CasesState[row + 1][col + 1].charAt(0) == color) {
+                legalmovesindex.push([row + 1, col + 1])
+            }
+        }
+    }
+    if (col - 1 !== -1) {
+        // left
+        if (CasesState[row][col - 1] == null) {
+            legalmovesindex.push([row, col - 1])
+        }
+        else if (CasesState[row][col - 1].charAt(0) == color) {
+            legalmovesindex.push([row, col - 1])
+        }
+    }
+    if (col + 1 !== 8) {
+        // left
+        if (CasesState[row][col + 1] == null) {
+            legalmovesindex.push([row, col + 1])
+        }
+        else if (CasesState[row][col + 1].charAt(0) == color) {
+            legalmovesindex.push([row, col + 1])
+        }
+    }
+    return legalmovesindex
+}
+// Move
+
+
+
+// Main
+let colors = [null,'white','black']
+
+io.on('connection', socket => {
+    playerscount++
+    socket.emit('message', 'welcome to chess')
+    socket.broadcast.emit('message', 'your opponent has joined');
+
+    socket.on('disconnect', () => {
+        playerscount--
+        io.emit('message', 'your opponent has left')
+    })
+    socket.on('move', Data => {
+        CasesState = Data
+        io.emit('requestDraw',CasesState)
+    })
+
+    
+    socket.on('start', CasesState => {
+        socket.emit('requeststart', CasesState)
+        socket.emit('private',colors[playerscount])
+    })
+})
+
+const PORT = 3000 || process.env.PORT
+
+
+server.listen(PORT, ()=> console.log(PORT))
